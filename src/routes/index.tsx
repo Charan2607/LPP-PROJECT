@@ -13,10 +13,6 @@ function Home() {
       <section className="relative overflow-hidden">
         <LightningBg />
         <div className="relative mx-auto max-w-7xl px-6 pt-24 pb-32 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
-            className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-gold">
-            <Sparkles className="h-3 w-3" /> AI Powered · Version 2.0
-          </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.9 }}
             className="mt-8 text-5xl md:text-7xl lg:text-8xl font-display font-semibold leading-[1.05]">
             Illuminate every
@@ -25,7 +21,7 @@ function Home() {
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.8 }}
             className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground">
-            Lumen fuses behavioural signals, engagement metrics and study patterns into a single luminous prediction — so no learner slips through the cracks.
+            LUMEN fuses behavioural signals, engagement metrics and study patterns into a single luminous prediction — so no learner slips through the cracks.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
             className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -91,7 +87,7 @@ function Home() {
       </section>
 
       <footer className="border-t border-border/40 py-8 text-center text-xs text-muted-foreground">
-        © 2026 Lumen · Illuminating academic futures
+        © 2026 LUMEN · Illuminating academic futures
       </footer>
     </div>
   );

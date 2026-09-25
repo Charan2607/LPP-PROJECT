@@ -26,7 +26,7 @@ export function Nav() {
           <motion.div whileHover={{ rotate: 12, scale: 1.1 }} className="rounded-lg bg-gold-gradient p-2 shadow-luxe">
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </motion.div>
-          <span className="font-display text-2xl font-semibold text-shimmer">Lumen</span>
+          <span className="font-display text-2xl font-semibold text-shimmer">LUMEN</span>
         </Link>
         <div className="hidden md:flex items-center gap-8">
           {links.map(l => (

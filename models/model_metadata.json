@@ -1,0 +1,37 @@
+{
+  "model": "Linear Regression",
+  "selection_metric": "rmse",
+  "mae": 1.6280872268087017,
+  "rmse": 2.048822134364273,
+  "r2": 0.9886728528561277,
+  "model_comparison": {
+    "Linear Regression": {
+      "mae": 1.6280872268087017,
+      "rmse": 2.048822134364273,
+      "r2": 0.9886728528561277
+    },
+    "Random Forest": {
+      "mae": 1.7782820852647363,
+      "rmse": 2.236506845306585,
+      "r2": 0.9865025262668584
+    },
+    "XGBoost": {
+      "mae": 1.686021568775177,
+      "rmse": 2.125059218522631,
+      "r2": 0.9878141984465776
+    },
+    "Decision Tree": {
+      "mae": 2.116041666666667,
+      "rmse": 2.672174234380851,
+      "r2": 0.980731781092663
+    }
+  },
+  "features": [
+    "previousScore_scaled",
+    "assignments_scaled",
+    "studyHours_scaled",
+    "participation_scaled",
+    "sleep_scaled"
+  ],
+  "target": "Performance Index"
+}

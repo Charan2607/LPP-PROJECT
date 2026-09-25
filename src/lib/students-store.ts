@@ -12,18 +12,92 @@ export type Student = {
   createdAt: number;
 };
 
+type AuthResponse = {
+  success: boolean;
+  token: string;
+  email: string;
+  name: string;
+  message?: string;
+};
+
 const AUTH_KEY = "lumen.auth.v1";
+const TOKEN_KEY = "lumen.token.v1";
 
 async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const token = getAuthToken();
+  const headers = new Headers(init?.headers || {});
+  headers.set("Content-Type", "application/json");
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   const response = await fetch(input, {
-    headers: { "Content-Type": "application/json" },
     ...init,
+    headers,
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`API request failed: ${response.status} ${body}`);
+    let message = body;
+    try {
+      const payload = JSON.parse(body) as { detail?: string; message?: string };
+      message = payload.detail || payload.message || body;
+    } catch {
+      // Keep the raw response for non-JSON backend errors.
+    }
+    throw new Error(message || `API request failed: ${response.status}`);
   }
   return response.json();
+}
+
+// Authentication functions
+export async function apiLogin(
+  email: string,
+  password: string,
+): Promise<{ token: string; email: string; name: string }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const result = await fetchJson<AuthResponse>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: normalizedEmail, password }),
+  });
+  if (result.success) {
+    storeAuthToken(result.token);
+    localStorage.setItem(AUTH_KEY, "1");
+    localStorage.setItem(AUTH_KEY + ".email", normalizedEmail);
+    localStorage.setItem(AUTH_KEY + ".name", result.name || "");
+    return result;
+  }
+  throw new Error(result.message || "Login failed");
+}
+
+export async function apiSignup(
+  email: string,
+  password: string,
+  name: string,
+): Promise<{ token: string; email: string; name: string }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const result = await fetchJson<AuthResponse>("/api/auth/signup", {
+    method: "POST",
+    body: JSON.stringify({ email: normalizedEmail, password, name }),
+  });
+  if (result.success) {
+    storeAuthToken(result.token);
+    localStorage.setItem(AUTH_KEY, "1");
+    localStorage.setItem(AUTH_KEY + ".email", normalizedEmail);
+    localStorage.setItem(AUTH_KEY + ".name", name);
+    return result;
+  }
+  throw new Error(result.message || "Signup failed");
+}
+
+function storeAuthToken(token: string) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+}
+
+function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export async function loadStudents(): Promise<Student[]> {
@@ -40,6 +114,9 @@ export async function addStudent(s: Omit<Student, "id" | "createdAt">): Promise<
 export async function deleteStudent(id: string): Promise<void> {
   const response = await fetch(`/api/students/${id}`, {
     method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${getAuthToken()}`,
+    },
   });
   if (!response.ok && response.status !== 204) {
     const body = await response.text();
@@ -47,62 +124,49 @@ export async function deleteStudent(id: string): Promise<void> {
   }
 }
 
-import weights from "./model-weights.json";
-
-export function predictPerformance(s: Pick<Student, "attendance" | "studyHours" | "previousScore" | "assignments" | "participation" | "sleepHours">) {
-  // Weighted model producing a 0-100 predicted score.
-  const attendance = s.attendance / 100;
-  const study = Math.min(s.studyHours, 40) / 40;
-  const prev = s.previousScore / 100;
-  const assign = s.assignments / 100;
-  const part = s.participation / 10;
-  // Sleep: optimal at 8h — Gaussian-ish falloff
-  const sleep = Math.max(0, 1 - Math.abs(s.sleepHours - 8) / 6);
-
-  const raw =
-    weights.intercept +
-    prev * weights.previousScore +
-    attendance * weights.attendance +
-    assign * weights.assignments +
-    study * weights.studyHours +
-    part * weights.participation +
-    sleep * weights.sleepHours;
-
-  const score = Math.round(Math.max(0, Math.min(1, raw)) * 100);
-  const grade = score >= 90 ? "A+" : score >= 80 ? "A" : score >= 70 ? "B" : score >= 60 ? "C" : score >= 50 ? "D" : "F";
-  const risk = score >= 75 ? "Low" : score >= 55 ? "Medium" : "High";
-  const factors = [
-    { label: "Prior Academic", value: Math.round(prev * 100), weight: Math.round(weights.previousScore * 100) },
-    { label: "Attendance", value: Math.round(attendance * 100), weight: Math.round(weights.attendance * 100) },
-    { label: "Assignments", value: Math.round(assign * 100), weight: Math.round(weights.assignments * 100) },
-    { label: "Study Habit", value: Math.round(study * 100), weight: Math.round(weights.studyHours * 100) },
-    { label: "Participation", value: Math.round(part * 100), weight: Math.round(weights.participation * 100) },
-    { label: "Sleep Balance", value: Math.round(sleep * 100), weight: Math.round(weights.sleepHours * 100) },
-  ];
-  const suggestions: string[] = [];
-  if (attendance < 0.8) suggestions.push("Improve attendance — aim above 85%.");
-  if (study < 0.5) suggestions.push("Increase focused study time to 15+ hrs/week.");
-  if (assign < 0.7) suggestions.push("Complete outstanding assignments consistently.");
-  if (part < 0.5) suggestions.push("Engage more in class — ask & answer questions.");
-  if (sleep < 0.6) suggestions.push("Optimize sleep — target 7-9 hours nightly.");
-  if (suggestions.length === 0) suggestions.push("Excellent balance. Maintain your rhythm.");
-
-  return { score, grade, risk, factors, suggestions };
+export async function getPrediction(
+  s: Pick<
+    Student,
+    "attendance" | "studyHours" | "previousScore" | "assignments" | "participation" | "sleepHours"
+  >,
+) {
+  return fetchJson<{
+    prediction: number;
+    model: string;
+    score: number;
+    grade: string;
+    risk: string;
+    factors: Array<{ label: string; value: number; weight: number }>;
+    suggestions: string[];
+  }>("/api/predict", {
+    method: "POST",
+    body: JSON.stringify(s),
+  });
 }
 
 export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
-  return localStorage.getItem(AUTH_KEY) === "1";
+  return localStorage.getItem(AUTH_KEY) === "1" && !!getAuthToken();
 }
+
 export function login(email: string) {
   localStorage.setItem(AUTH_KEY, "1");
   localStorage.setItem(AUTH_KEY + ".email", email);
 }
+
 export function logout() {
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem(AUTH_KEY + ".email");
+  localStorage.removeItem(AUTH_KEY + ".name");
+  localStorage.removeItem(TOKEN_KEY);
 }
+
 export function currentEmail(): string {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(AUTH_KEY + ".email") || "";
+}
+
+export function currentName(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(AUTH_KEY + ".name") || "";
 }

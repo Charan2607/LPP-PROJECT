@@ -48,9 +48,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lumen — Student Performance Prediction" },
+      { title: "LUMEN — Student Performance Prediction" },
       { name: "description", content: "AI-powered luxury dashboard to predict student academic performance from study habits, attendance and engagement." },
-      { property: "og:title", content: "Lumen — Student Performance Prediction" },
+      { property: "og:title", content: "LUMEN — Student Performance Prediction" },
       { property: "og:description", content: "Predict, visualize and elevate student outcomes with a beautifully crafted analytics suite." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
